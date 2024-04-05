@@ -21,23 +21,29 @@ FROM nvcr.io/nvidia/pytorch:24.03-py3
 ENV THIRD_PARTY=/ThirdParty
 WORKDIR ${THIRD_PARTY}
 
-# pip installations.
+# pip installations and updating OpenCV build.
 
-## Update pip.
+COPY BuildOpenCVWithCUDA.sh ${THIRD_PARTY}
+
+ARG OPENCV_VERSION=4.9.0
+
+ARG ARCH
+ARG PTX
+
+## Update pip and update OpenCV build.
 RUN python -m pip install --upgrade pip && \
-  pip install --upgrade jupyter && \
-  # Reads key-value pairs from .env file to set environment variables; in
-  # particular for Open AI API keys for LangChain.
-  pip install --upgrade python-dotenv && \
-  # For WebBaseLoader for LangChain retrieval.
-  pip install --upgrade beautifulsoup4 && \
-  # For Langchain, for langchain.document_loaders.DirectoryLoader
-  pip install --upgrade unstructured[all-docs] && \
-  # For the Vector Search Tutorial, Project 2, https://youtu.be/JEBDfGqrAUA?si=M5rZOgqQem0Hj4L6
-  pip install --upgrade gradio && \
-  # For ChromaDB, vector store or embedding database.
-  pip install --upgrade chromadb
-  ## LangChain
+  pip uninstall -y opencv && \
+  cd / && \
+  # https://docs.opencv.org/4.x/d7/d9f/tutorial_linux_install.html
+  # -q for quiet because output of wget with progress bars is too much.
+  wget -q https://github.com/opencv/opencv/archive/${OPENCV_VERSION}.zip -O opencv.zip && \
+  unzip opencv && \
+  wget -q https://github.com/opencv/opencv_contrib/archive/${OPENCV_VERSION}.zip -O opencv_contrib.zip && \
+  unzip opencv_contrib && \
+  cd /opencv-${OPENCV_VERSION} && \
+  /bin/bash ${THIRD_PARTY}/BuildOpenCVWithCUDA.sh ${ARCH} ${PTX}
+
+## LangChain
 
 ### https://python.langchain.com/docs/get_started/introduction
 ### The LangChain libraries themselves are made up of several different packages
@@ -46,27 +52,4 @@ RUN python -m pip install --upgrade pip && \
 ### application's cognitive architecture.
 ### langchain-core: Base abstractions and LangChain Expression Language.
 ### langchain-community: Third party integrations.
-
-RUN git clone https://github.com/ernestyalumni/langchain.git /ThirdParty/langchain && \
-  cd /ThirdParty/langchain/libs/langchain && \
-  git checkout master && \
-  # Install editable install from source.
-  # See https://python.langchain.com/docs/get_started/installation
-  pip install -e . && \
-  cd ../core && \
-  pip install -e . && \
-  cd ../community && \
-  pip install -e . && \
-  cd ../experimental && \
-  pip install -e . && \  
-  # Install partners, which include Anthropic, Mistral AI, Open AI, etc.
-  cd ../partners && \
-  cd anthropic && \
-  pip install -e . && \
-  cd ../mistralai && \
-  pip install -e . && \
-  cd ../openai && \
-  pip install -e . && \
-  cd ../together && \
-  pip install -e .
 

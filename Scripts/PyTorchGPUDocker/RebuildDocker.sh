@@ -26,11 +26,6 @@ build_docker_image()
   echo "This is CUDA_ARCHITECTURES option: $CUDA_ARCHITECTURES"
 
   # Builds from Dockerfile in this directory.
-  # https://docs.docker.com/engine/reference/commandline/build/
-  # --no-cache Don't use cache when building image.
-  # Otherwise when we do run
-  #  => [2/2] RUN pip install neuraloperators                                  4.0s
-  # it would be cached without the option flag, not guaranteeing it was installed.
   docker build --build-arg="DISABLE_RAFT=${DISABLE_RAFT}" \
     --build-arg="COMPUTE_CAPABILITY=${CUDA_ARCHITECTURES}" \
     -t "$DOCKER_IMAGE_NAME" .
